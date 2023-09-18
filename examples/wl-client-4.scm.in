@@ -1,0 +1,34 @@
+#!@GUILE@ --no-auto-compile -e main
+!#
+
+(use-modules (wayland client display)
+             (ice-9 format)
+             (system foreign-library)
+             ((system foreign) #:prefix ffi:)
+             (rnrs bytevectors)
+             (wayland interface)
+             (wayland proxy)
+             (wayland client protocol wayland)
+             (wayland client protocol xdg-shell))
+
+(define (main . _)
+  (let* ((w-display (wl-display-connect)))
+    (unless w-display
+      (display "Unable to connect to wayland compositor")
+      (newline)
+      (exit -1))
+    (display "connect to wayland compositor: ")
+    (display w-display)
+    (newline)
+    (let ((registry (wl-display-get-registry w-display))
+          (listener (make <wl-registry-listener>
+                      #:global
+                      (lambda (data registry name interface version)
+                        (cond ((string=? "zwp_text_input_manager_v3" interface)
+                               (display "got something"))))
+                      #:global-remove
+                      (lambda (data registry name)
+                        (pk 'remove data registry name)))))
+      (wl-registry-add-listener registry listener))
+    (wl-display-roundtrip w-display)
+    (while (wl-display-dispatch w-display))))
