@@ -10,6 +10,7 @@
              (wayland interface)
              (wayland proxy)
              (wayland client protocol wayland)
+             (wayland client protocol text-input)
              (wayland client protocol xdg-shell))
 
 (gc-disable)
