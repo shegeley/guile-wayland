@@ -20,3 +20,6 @@ SCM_LOG_DRIVER =                                \
   $(top_srcdir)/build-aux/test-driver.scm
 
 SUBDIRS = examples libguile-wayland modules/wayland
+
+repl:
+    guix shell guile -f guix.scm --rebuild-cache -- guile --listen=1337
