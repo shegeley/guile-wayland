@@ -37,6 +37,7 @@ SOURCES = ../wayland.scm \
  scanner.scm         \
  server/protocol/wayland.scm \
  client/protocol/wayland.scm \
+ client/protocol/text-input.scm \
  client/protocol/xdg-shell.scm \
  egl.scm             \
  event-loop.scm      \
