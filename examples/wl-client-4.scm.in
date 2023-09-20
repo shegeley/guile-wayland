@@ -41,7 +41,7 @@
                                 ;; see (wayland client protocol wayland), (wayland client protocol xdg)
                                 (wrap-wl-interface
                                  (wl-registry-bind registry name
-                                                   %wl-text-input-manager-interface 1))))))
+                                                   |# undefined variable -> %wl-text-input-manager-interface #| 3))))))
                       #:global-remove
                       (lambda (data registry name)
                         (pk 'remove data registry name))))]
