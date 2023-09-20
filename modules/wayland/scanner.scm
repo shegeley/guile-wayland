@@ -14,6 +14,7 @@
   #:use-module (srfi srfi-26)
   #:use-module (srfi srfi-171)
   #:use-module (ice-9 match)
+  #:use-module (ice-9 format)
   #:use-module (bytestructures guile)
   #:use-module (sxml simple)
   #:use-module (sxml match)
@@ -66,7 +67,10 @@
       (sxml-match sxml
         ((*TOP* ,_ (protocol (@ (name ,(_->- -> name)))
                              (copyright ,copyright) ,interfaces ...))
-         (%make-protocol name copyright (map sxml->interface interfaces)))))
+         (%make-protocol name copyright (map sxml->interface interfaces)))
+        (,otherwise
+         (error (format (current-error-port)
+                        "Can't match ~a in (sxml->protocol)~%" sxml)))))
 
     (define (sxml->interface sxml)
       (sxml-match sxml
@@ -85,7 +89,10 @@
            (%make-interface (_->- name) (string->number version*)
                             (or (assoc-ref childs 'request) '())
                             (or (assoc-ref childs 'event) '())
-                            (or (assoc-ref childs 'enum) '()))))))
+                            (or (assoc-ref childs 'enum) '()))))
+        (,otherwise
+         (error (format (current-error-port)
+                        "Can't match ~a in (sxml->interface)~%" sxml)))))
 
     (define (c-num->scm-num s)
       (or (if (string-prefix? "0x" s )
