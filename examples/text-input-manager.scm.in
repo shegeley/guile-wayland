@@ -1,16 +1,18 @@
 #!@GUILE@ --no-auto-compile -e main
 !#
-(use-modules (wayland client display)
-             (oop goops)
-             (ice-9 format)
-             (system foreign-library)
-             ((system foreign) #:prefix ffi:)
-             (rnrs bytevectors)
-             (wayland interface)
-             (wayland proxy)
-             (wayland client protocol wayland)
-             (wayland client protocol text-input)
-             (wayland client protocol xdg-shell))
+
+(use-modules
+ (wayland client display)
+ (oop goops)
+ (ice-9 format)
+ (system foreign-library)
+ ((system foreign) #:prefix ffi:)
+ (rnrs bytevectors)
+ (wayland interface)
+ (wayland proxy)
+ (wayland client protocol wayland)
+ (wayland client protocol text-input)
+ (wayland client protocol xdg-shell))
 
 (gc-disable)
 
@@ -35,12 +37,14 @@
                                (text-input-manager
                                 ;; TODO: figure out the wrapping & unwrapping here.
                                 ;; see (wayland client protocol wayland), (wayland client protocol xdg)
-                                ;; NOTE: wrap-wl-text-input-manager doesn't exists
-                                (wrap-wl-text-input-manager
+                                ;; NOTE: wl_registry@2: error 0: invalid version for global zwp_text_input_manager_v3 (24): have 1, wanted 3
+                                (wrap-zwp-text-input-manager-v3
                                  (wl-registry-bind
                                   registry name
-                                  ;; NOTE: %wl-text-input-manager-interface doesn't exists
-                                  %wl-text-input-manager-interface 3))))))
+                                  %zwp-text-input-manager-v3-interface
+                                  ;; NOTE: version is "1"! Even thought it might seems strange
+                                  ;; from `interface: 'zwp_text_input_manager_v3', version: 1, name: 23`
+                                  1))))))
                       #:global-remove
                       (lambda (data registry name)
                         (pk 'remove data registry name))))]
