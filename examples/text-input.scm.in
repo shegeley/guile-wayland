@@ -18,9 +18,6 @@
 (define text-input
   (make-parameter #f))
 
-(define text-input-manager
-  (make-parameter #f))
-
 (define (main . _)
   (let* ((w-display (wl-display-connect)))
     (unless w-display
@@ -36,18 +33,23 @@
                       (lambda* (data registry name interface version)
                         (cond ((string=? "zwp_text_input_manager_v3" interface)
                                (format #t "Got call~%")
-                               (text-input-manager
+                               (text-input
                                 ;; TODO: figure out the wrapping & unwrapping here.
                                 ;; see (wayland client protocol wayland), (wayland client protocol xdg)
-                                (wrap-wl-interface
-                                 (wl-registry-bind registry name
-                                                   |# undefined variable -> %wl-text-input-manager-interface #| 3))))))
+                                ;; NOTE: wrap-wl-text doesn't exists
+                                (wrap-wl-text-input
+                                 (wl-registry-bind
+                                  registry name
+                                  ;; NOTE: %wl-text-input-manager-interface doesn't exists
+                                   %wl-text-input-manager-interface
+                                   3))))))
+
                       #:global-remove
                       (lambda (data registry name)
                         (pk 'remove data registry name))))]
       (wl-registry-add-listener registry listener))
     (wl-display-roundtrip w-display)
-    (if (text-input-manager)
+    (if (text-input)
         (format #t "Got it!~%" )
         (error (format #f "Can't access text-input!")))
     ;; (let [(text-input-manager (wl-compositor-get-text-input-manager (text-input-manager)))]
