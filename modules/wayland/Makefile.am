@@ -36,6 +36,7 @@ SOURCES = ../wayland.scm \
  server/listener.scm \
  scanner.scm         \
  server/protocol/wayland.scm \
+ server/protocol/text-input.scm \
  client/protocol/wayland.scm \
  client/protocol/text-input.scm \
  client/protocol/xdg-shell.scm \
