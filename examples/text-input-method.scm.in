@@ -1,0 +1,114 @@
+#!@GUILE@ --no-auto-compile -e main
+!#
+
+(use-modules
+ (wayland client display)
+ (oop goops)
+ (ice-9 format)
+ (system foreign-library)
+ ((system foreign) #:prefix ffi:)
+ (rnrs bytevectors)
+ (wayland interface)
+ (wayland proxy)
+ (wayland client protocol wayland)
+ (wayland client protocol text-input)
+ (wayland client protocol xdg-shell))
+
+;; see the reference from wlroots
+;; https://github.com/swaywm/wlroots/blob/master/examples/input-method.c
+
+;; TODO: rewrite text-input -> input-method
+
+(gc-disable)
+
+(define compositor (make-parameter #f))
+(define xdg-wm-base (make-parameter #f))
+(define seat (make-parameter #f))
+(define surface (make-parameter #f))
+(define text-input (make-parameter #f))
+(define text-input-manager (make-parameter #f))
+(define xdg-toplevel (make-parameter #f))
+
+(define (main)
+  (let* ((w-display (wl-display-connect)))
+    (unless w-display
+      (display "Unable to connect to wayland compositor")
+      (newline)
+      (exit -1))
+    (display "connect to wayland compositor: ")
+    (display w-display)
+    (newline)
+    (let [(registry (wl-display-get-registry w-display))
+          (listener (make <wl-registry-listener>
+                      #:global
+                      (lambda* (data registry name interface version)
+                        (format #t "interface: '~a', version: ~a, name: ~a~%"
+                                interface version name)
+                        (cond
+                         ((string=? "wl_seat" interface)
+                          (seat (wrap-wl-seat (wl-registry-bind registry name %wl-seat-interface 3))))
+                         ((string=? "wl_compositor" interface)
+                          (compositor (wrap-wl-compositor
+                                       (wl-registry-bind
+                                        registry name
+                                        %wl-compositor-interface 3))))
+                         ((string=? "xdg_wm_base" interface)
+                          (xdg-wm-base
+                           (wrap-xdg-wm-base
+                            (wl-registry-bind registry name %xdg-wm-base-interface 1)))
+                          (xdg-wm-base-add-listener
+                           (xdg-wm-base)
+                           (make <xdg-wm-base-listener>
+                             #:ping (lambda (data base  serial)
+                                      (pk 'ping)
+                                      (xdg-wm-base-pong base serial)))))
+                         ((string=? "zwp_text_input_manager_v3" interface)
+                          (format #t "Got call~%")
+                          (text-input-manager (wrap-zwp-text-input-manager-v3
+                                               (wl-registry-bind registry name
+                                                                 %zwp-text-input-manager-v3-interface 1)))
+                          (text-input (zwp-text-input-manager-v3-get-text-input
+                                       (text-input-manager)
+                                       (seat))))))
+                      #:global-remove
+                      (lambda (data registry name)
+                        (pk 'remove data registry name))))]
+      (wl-registry-add-listener registry listener))
+    (wl-display-roundtrip w-display)
+    (if (and (text-input-manager)
+             (text-input)
+             (seat))
+        (format #t "Got it!~%" )
+        (error (format #f "Can't access text-input!")))
+    (format #t "manager: ~a~%" (text-input-manager))
+    (format #t "input: ~a~%" (text-input))
+    (let* [(surface* (wl-compositor-create-surface (compositor)))
+           (_ (surface surface*))
+           (xdg-surface (xdg-wm-base-get-xdg-surface (xdg-wm-base) (surface)))
+           (listener (make <zwp-text-input-v3-listener>
+                       #:done
+                       (lambda (data _ int)
+                         (format #t "done with: ~a ~%" int))
+                       #:commit-string
+                       (lambda (data _ string)
+                         (format #t "string: ~a ~%" string))
+                       #:enter
+                       (lambda (data text-input* wl-surface)
+                         (wl-surface-commit (surface))
+                         (zwp-text-input-v3-enable (text-input))
+                         (format #t "enter! args: ~a ~%" data)
+                         (zwp-text-input-v3-commit (text-input))
+                         (wl-surface-commit (surface)))
+                       #:leave
+                       (lambda (data text-input* wl-surface)
+                         (wl-surface-commit (surface))
+                         (wl-display-roundtrip w-display)
+                         (zwp-text-input-v3-disable (text-input))
+                         (format #t "leave! args: ~a ш~%" wl-surface)
+                         (zwp-text-input-v3-commit (text-input))
+                         (wl-surface-commit (surface)))))]
+      (zwp-text-input-v3-add-listener (text-input) listener)
+      (xdg-toplevel (xdg-surface-get-toplevel xdg-surface))
+      (wl-surface-commit (surface)))
+    (wl-display-roundtrip w-display)
+    (while (wl-display-dispatch w-display))))
