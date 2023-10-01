@@ -1,4 +1,4 @@
-(define-module (wayland client protocol input-mtthod)
+(define-module (wayland client protocol input-method)
   #:use-module (wayland client protocol wayland)
   #:use-module (bytestructure-class)
   #:use-module (wayland scanner)
