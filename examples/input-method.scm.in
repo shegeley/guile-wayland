@@ -25,8 +25,7 @@
 (define xdg-wm-base (make-parameter #f))
 (define seat (make-parameter #f))
 (define surface (make-parameter #f))
-(define text-input (make-parameter #f))
-(define text-input-manager (make-parameter #f))
+(define input-method (make-parameter #f))
 (define xdg-toplevel (make-parameter #f))
 
 (define (main)
@@ -62,53 +61,48 @@
                              #:ping (lambda (data base  serial)
                                       (pk 'ping)
                                       (xdg-wm-base-pong base serial)))))
-                         ((string=? "zwp_text_input_manager_v3" interface)
+                         ((string=? "zwp_input_method_v1" interface)
                           (format #t "Got call~%")
-                          (text-input-manager (wrap-zwp-text-input-manager-v3
-                                               (wl-registry-bind registry name
-                                                                 %zwp-text-input-manager-v3-interface 1)))
-                          (text-input (zwp-text-input-manager-v3-get-text-input
-                                       (text-input-manager)
-                                       (seat))))))
+                          (input-method (wrap-zwp-input-method-v1
+                                         (wl-registry-bind registry name
+                                                           %zwp-input-method-v1-interface 1))))))
                       #:global-remove
                       (lambda (data registry name)
                         (pk 'remove data registry name))))]
       (wl-registry-add-listener registry listener))
     (wl-display-roundtrip w-display)
-    (if (and (text-input-manager)
-             (text-input)
+    (if (and (input-method)
              (seat))
         (format #t "Got it!~%" )
-        (error (format #f "Can't access text-input!")))
-    (format #t "manager: ~a~%" (text-input-manager))
-    (format #t "input: ~a~%" (text-input))
-    (let* [(surface* (wl-compositor-create-surface (compositor)))
-           (_ (surface surface*))
-           (xdg-surface (xdg-wm-base-get-xdg-surface (xdg-wm-base) (surface)))
-           (listener (make <zwp-text-input-v3-listener>
-                       #:done
-                       (lambda (data _ int)
-                         (format #t "done with: ~a ~%" int))
-                       #:commit-string
-                       (lambda (data _ string)
-                         (format #t "string: ~a ~%" string))
-                       #:enter
-                       (lambda (data text-input* wl-surface)
-                         (wl-surface-commit (surface))
-                         (zwp-text-input-v3-enable (text-input))
-                         (format #t "enter! args: ~a ~%" data)
-                         (zwp-text-input-v3-commit (text-input))
-                         (wl-surface-commit (surface)))
-                       #:leave
-                       (lambda (data text-input* wl-surface)
-                         (wl-surface-commit (surface))
-                         (wl-display-roundtrip w-display)
-                         (zwp-text-input-v3-disable (text-input))
-                         (format #t "leave! args: ~a ш~%" wl-surface)
-                         (zwp-text-input-v3-commit (text-input))
-                         (wl-surface-commit (surface)))))]
-      (zwp-text-input-v3-add-listener (text-input) listener)
-      (xdg-toplevel (xdg-surface-get-toplevel xdg-surface))
-      (wl-surface-commit (surface)))
+        (error (format #f "Can't access input-method!")))
+    (format #t "input-method: ~a~%" (input-method))
+    ;; (let* [(surface* (wl-compositor-create-surface (compositor)))
+    ;;        (_ (surface surface*))
+    ;;        (xdg-surface (xdg-wm-base-get-xdg-surface (xdg-wm-base) (surface)))
+    ;;        (listener (make <zwp-input-method-v3-listener>
+    ;;                    #:done
+    ;;                    (lambda (data _ int)
+    ;;                      (format #t "done with: ~a ~%" int))
+    ;;                    #:commit-string
+    ;;                    (lambda (data _ string)
+    ;;                      (format #t "string: ~a ~%" string))
+    ;;                    #:enter
+    ;;                    (lambda (data text-input* wl-surface)
+    ;;                      (wl-surface-commit (surface))
+    ;;                      (zwp-text-input-v3-enable (text-input))
+    ;;                      (format #t "enter! args: ~a ~%" data)
+    ;;                      (zwp-text-input-v3-commit (text-input))
+    ;;                      (wl-surface-commit (surface)))
+    ;;                    #:leave
+    ;;                    (lambda (data text-input* wl-surface)
+    ;;                      (wl-surface-commit (surface))
+    ;;                      (wl-display-roundtrip w-display)
+    ;;                      (zwp-text-input-v3-disable (text-input))
+    ;;                      (format #t "leave! args: ~a ш~%" wl-surface)
+    ;;                      (zwp-text-input-v3-commit (text-input))
+    ;;                      (wl-surface-commit (surface)))))]
+    ;;   (zwp-text-input-v3-add-listener (text-input) listener)
+    ;;   (xdg-toplevel (xdg-surface-get-toplevel xdg-surface))
+    ;;   (wl-surface-commit (surface)))
     (wl-display-roundtrip w-display)
     (while (wl-display-dispatch w-display))))
