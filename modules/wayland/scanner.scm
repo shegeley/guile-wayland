@@ -39,26 +39,46 @@
                                    '- <>))) #'(childs ...))))
          #`(begin (define-record-type cname
                     (make childs ...) check (childs get-childs) ...)))))))
-(define-type protocol (name copyright interfaces))
-(define-type interface (name version requests events enums))
-(define-type message (name destructor since type args))
-(define-type enum (name values bitfield?))
-(define-type arg (name type interface allow-null?))
+
+(define-type protocol
+  (name copyright interfaces))
+
+(define-type interface
+  (name version requests events enums))
+
+(define-type message
+  (name destructor since type args))
+
+(define-type enum
+  (name values bitfield?))
+
+(define-type arg
+  (name type interface allow-null?))
 
 (define (file->sxml file)
   (call-with-input-file file (cut xml->sxml <> #:trim-whitespace? #t)))
-(define -->_ (cut string-map (lambda (a) (if (char=? a #\-) #\_ a)) <>))
-(define _->- (cut string-map (lambda (a) (if (char=? a #\_) #\- a)) <>))
-(define string->keyword (compose symbol->keyword string->symbol))
+
+(define -->_
+  (cut string-map (lambda (a) (if (char=? a #\-) #\_ a)) <>))
+
+(define _->-
+  (cut string-map (lambda (a) (if (char=? a #\_) #\- a)) <>))
+
+(define string->keyword
+  (compose symbol->keyword string->symbol))
+
 (define* (make-%interface-name name #:key (string? #f))
   ((compose (if string? identity string->symbol))
    (string-append "%" (_->- name) "-interface")))
+
 (define* (make-%wrap-name name #:key (string? #f))
   ((compose (if string? identity string->symbol))
    (string-append "wrap-" (_->- name))))
+
 (define* (make-%unwrap-name name #:key (string? #f))
   ((compose (if string? identity string->symbol))
    (string-append "unwrap-" (_->- name))))
+
 (define (sxml->protocol sxml)
   (sxml-match sxml
     ((*TOP* ,_ (protocol (@ (name ,(_->- -> name)))
@@ -127,7 +147,9 @@
     (,rest (throw 'no-found sxml))))
 
 (define (new-id-handle arg is no-i no)
-  (if (string= (arg-type arg) "new_id") (if (arg-interface arg) is no-i) no))
+  (if (string= (arg-type arg) "new_id")
+      (if (arg-interface arg) is no-i) no))
+
 (define (is-nullable-type? type)
   (member type '("string" "object")))
 
@@ -136,10 +158,12 @@
         ((member type '("int" "fixed")) (list #`ffi:int32))
         ((equal? type "fd") (list #`ffi:int))
         ((member type '("new_id" "string" "array" "object")) (list #`'*))))
+
 (define (message-singature m)
   (apply string-append
          (or (message-since m) "")
          (map arg->signature (message-args m))))
+
 (define (arg->signature arg)
   (define itype (arg-interface arg))
   (define allow-null? (arg-allow-null? arg))
@@ -157,7 +181,10 @@
 
 (define-syntax use-wayland-protocol
   (lambda (x)
-    (define ->syntax (cut datum->syntax x <>))
+
+    (define ->syntax
+      (cut datum->syntax x <>))
+
     (define* (protocol->code protocol #:key (type 'server))
       (assert (protocol? protocol))
       (append (append-map (lambda (interface)
@@ -230,112 +257,135 @@
                 (list (list requests ...) ...)
                 (list (list events ...) ...)))
              (export %name)))))
+
     (define* (interface->interface-struct interface #:key (type 'server))
       (let* ((%name (string->symbol (interface-name interface))))
-        (with-syntax ((bname (->syntax (symbol-append '% %name '-struct)))
-                      (wrap (->syntax (symbol-append 'wrap- %name)))
-                      (unwrap (->syntax (symbol-append 'unwrap- %name)))
-                      (cname (->syntax (symbol-append '< %name '>)))
-                      (check (->syntax (symbol-append %name '?)))
-                      (supclasss (case type
-                                   ((server) #'())
-                                   ((client) #'(<wl-proxy>)))))
-          #`((define bname (bs:unknow))
+        (with-syntax
+            ((bname (->syntax (symbol-append '% %name '-struct)))
+             (wrap (->syntax (symbol-append 'wrap- %name)))
+             (unwrap (->syntax (symbol-append 'unwrap- %name)))
+             (cname (->syntax (symbol-append '< %name '>)))
+             (check (->syntax (symbol-append %name '?)))
+             (supclasss (case type
+                          ((server) #'())
+                          ((client) #'(<wl-proxy>)))))
+          #`((define bname
+               (bs:unknow))
+
              (define-bytestructure-class cname supclasss
                bname wrap unwrap check)
+
              (export bname wrap unwrap check cname)
+
              #,@(case type
                   ((server) #'())
                   ((client)
-                   (with-syntax ((add-listener-name (->syntax (symbol-append %name '-add-listener)))
-                                 (unwrap-listener (->syntax (symbol-append 'unwrap- %name '-listener)))
-                                 (get-version (->syntax (symbol-append %name '-get-version)))
-                                 (get-user-data (->syntax (symbol-append %name '-get-user-data))))
+                   (with-syntax
+                       ((add-listener-name (->syntax (symbol-append %name '-add-listener)))
+                        (unwrap-listener (->syntax (symbol-append 'unwrap- %name '-listener)))
+                        (get-version (->syntax (symbol-append %name '-get-version)))
+                        (get-user-data (->syntax (symbol-append %name '-get-user-data))))
                      #`(#,@(if (null-list? (interface-events interface))
                                #'()
                                #'((define* (add-listener-name obj listener #:optional (data ffi:%null-pointer))
                                     (assert (check obj))
                                     (wl-proxy-add-listener obj (unwrap-listener listener) data))
                                   (export add-listener-name)))
+
                         (define (get-version obj)
                           (assert (check obj)) (wl-proxy-get-version obj))
+
                         (define (get-user-data obj)
                           (assert (check obj)) (wl-proxy-get-user-data obj))
+
                         (export get-version get-user-data)))))))))
+
     (define (interface->struct-code interface type)
       (assert (interface? interface))
-      (define iname (interface-name interface))
-      (define need-handle-list ((case type
-                                  ((server) interface-requests)
-                                  ((client) interface-events)) interface))
-      (define %name (string-append iname
-                                   (case type
-                                     ((server)  "-interface")
-                                     ((client) "-listener"))))
+
+      (define iname
+        (interface-name interface))
+
+      (define need-handle-list
+        ((case type
+           ((server) interface-requests)
+           ((client) interface-events)) interface))
+
+      (define %name
+        (string-append iname
+                       (case type
+                         ((server)  "-interface")
+                         ((client) "-listener"))))
+
       (if (null-list? need-handle-list)
           #'()
-          (with-syntax ((bs (->syntax (string->symbol (string-append "%" %name "-struct"))))
-                        (cname (->syntax (string->symbol (string-append "<" %name  ">"))))
-                        (wrap (->syntax (make-%wrap-name %name)))
-                        (unwrap (->syntax (make-%unwrap-name %name)))
-                        (check (->syntax (string->symbol (string-append %name "?"))))
-                        (((keyword slot-name lambda-args (call-args ...) (ffi-descs ...)) ...)
-                         (map
-                          (lambda (m)
-                            (list (string->keyword (message-name m))
-                                  (->syntax (string->symbol (message-name m)))
-                                  (append (case type
-                                            ((server) #`(wl-client resource))
-                                            ((client) #`(data #,(->syntax (string->symbol iname)))) )
-                                          (append-map
-                                           (lambda (arg)
-                                             (with-syntax ((arg-name (->syntax (string->symbol (arg-name arg)))))
-                                               (cond ((and (eq? type 'server) (equal? (arg-type arg) "new_id") (not (arg-interface arg)))
-                                                      #`(interface version* arg-name))
-                                                     (else #`(arg-name)))))
-                                           (message-args m)))
-                                  (append (case type
-                                            ((server)#`((wrap-wl-client wl-client)
-                                                        (wrap-wl-resource resource)))
-                                            ((client)#`(data (#,(->syntax
-                                                                 (make-%wrap-name iname))
-                                                              #,(->syntax (string->symbol iname))))))
-                                          (append-map
-                                           (lambda (arg)
-                                             (let ((name (arg-name arg))
-                                                   (atype (arg-type arg))
-                                                   (itype (arg-interface arg)))
-                                               (with-syntax ((name* (->syntax (string->symbol name))))
-                                                 (cond ((and (eq? type 'server) (equal? atype "object"))
-                                                        #`((wrap-wl-resource name*)))
-                                                       ((and (eq? type 'server) (equal? atype "new_id") (not itype))
-                                                        #`((ffi:pointer->string interface) version* name*))
-                                                       ((and (eq? type 'client) (equal? atype "new_id"))
-                                                        #`(name*))
-                                                       ((or (member atype '("int" "fd" "new_id" "uint" "fixed")))
-                                                        #`(name*))
-                                                       ((equal? atype "string")
-                                                        #`((ffi:pointer->string name*)))
-                                                       ((equal? atype "object")
-                                                        #`((#,(->syntax (make-%wrap-name iname))
-                                                            name*)))
-                                                       ((equal? atype "array")
-                                                        #`((wrap-wl-array name*)))))))
-                                           (message-args m)))
-                                  (append-map
-                                   (lambda (arg)
-                                     (let ((name (arg-name arg))
-                                           (atype (arg-type arg))
-                                           (itype (arg-interface arg)))
-                                       (cond ((and (eq? type 'server) (equal? atype "new_id") (not itype))
-                                              #`('* ffi:uint32 ))
-                                             (else (arg-type->ffi atype)))))
-                                   (message-args m))))
-                          need-handle-list)))
-            #`((define-public bs (bs:struct `((slot-name ,(bs:pointer '*)) ...)))
+          (with-syntax
+              ((bs (->syntax (string->symbol (string-append "%" %name "-struct"))))
+               (cname (->syntax (string->symbol (string-append "<" %name  ">"))))
+               (wrap (->syntax (make-%wrap-name %name)))
+               (unwrap (->syntax (make-%unwrap-name %name)))
+               (check (->syntax (string->symbol (string-append %name "?"))))
+               (((keyword slot-name lambda-args (call-args ...) (ffi-descs ...)) ...)
+                (map
+                 (lambda (m)
+                   (list (string->keyword (message-name m))
+                         (->syntax (string->symbol (message-name m)))
+                         (append (case type
+                                   ((server) #`(wl-client resource))
+                                   ((client) #`(data #,(->syntax (string->symbol iname)))) )
+                                 (append-map
+                                  (lambda (arg)
+                                    (with-syntax ((arg-name (->syntax (string->symbol (arg-name arg)))))
+                                      (cond ((and (eq? type 'server) (equal? (arg-type arg) "new_id") (not (arg-interface arg)))
+                                             #`(interface version* arg-name))
+                                            (else #`(arg-name)))))
+                                  (message-args m)))
+                         (append (case type
+                                   ((server)#`((wrap-wl-client wl-client)
+                                               (wrap-wl-resource resource)))
+                                   ((client)#`(data (#,(->syntax
+                                                        (make-%wrap-name iname))
+                                                     #,(->syntax (string->symbol iname))))))
+                                 (append-map
+                                  (lambda (arg)
+                                    (let ((name (arg-name arg))
+                                          (atype (arg-type arg))
+                                          (itype (arg-interface arg)))
+                                      (with-syntax ((name* (->syntax (string->symbol name))))
+                                        (cond ((and (eq? type 'server) (equal? atype "object"))
+                                               #`((wrap-wl-resource name*)))
+                                              ((and (eq? type 'server) (equal? atype "new_id") (not itype))
+                                               #`((ffi:pointer->string interface) version* name*))
+                                              ((and (eq? type 'client) (equal? atype "new_id"))
+                                               #`(name*))
+                                              ((or (member atype '("int" "fd" "new_id" "uint" "fixed")))
+                                               #`(name*))
+                                              ((equal? atype "string")
+                                               #`((ffi:pointer->string name*)))
+                                              ((equal? atype "object")
+                                               #`((#,(->syntax (make-%wrap-name iname))
+                                                   name*)))
+                                              ((equal? atype "array")
+                                               #`((wrap-wl-array name*)))))))
+                                  (message-args m)))
+                         (append-map
+                          (lambda (arg)
+                            (let ((name (arg-name arg))
+                                  (atype (arg-type arg))
+                                  (itype (arg-interface arg)))
+                              (cond ((and (eq? type 'server) (equal? atype "new_id") (not itype))
+                                     #`('* ffi:uint32 ))
+                                    (else (arg-type->ffi atype)))))
+                          (message-args m))))
+                 need-handle-list)))
+            #`((define-public bs
+                 (bs:struct `((slot-name ,(bs:pointer '*)) ...)))
+
                (define-bytestructure-class cname ()
                  bs wrap unwrap check (slot-name #:init-keyword keyword) ...)
+
                (export bs wrap unwrap check cname)
+
                (define-method (initialize (obj cname) initargs)
                  (next-method
                   obj (append (list keyword
@@ -485,8 +535,11 @@
                                              name "_" (car x))))))
                                  #,(cdr x)))
                             (enum-values enum))))
-          #`((define-public bs-name (bs:enum '((enames evalues) ...)))
-             (define-public enames evalues) ...))))
+          #`((define-public bs-name
+               (bs:enum '((enames evalues) ...)))
+             (define-public enames
+               evalues) ...))))
+
     (syntax-case x ()
       ((_ (xml-path a ...))
        (apply protocol->code
