@@ -489,11 +489,7 @@
              (define-public enames evalues) ...))))
     (syntax-case x ()
       ((_ (xml-path a ...))
-       #`(begin #,@(apply protocol->code
-                          (let ((path (syntax->datum #'xml-path)))
-                            (sxml->protocol
-                             (file->sxml
-                              (cond ((string? path) path)
-                                    ((symbol? path)
-                                     (module-ref (current-module) path))))))
-                          (syntax->datum #'(a ...))))))))
+       (apply protocol->code
+              (sxml->protocol
+               (file->sxml #'xml-path))
+              #'(a ...))))))
