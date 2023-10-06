@@ -3,4 +3,4 @@
   #:use-module (wayland scanner)
   #:use-module (wayland config))
 
-(use-wayland-protocol (%wayland-protocol #:type server))
+(use-wayland-protocol (%wayland-protocol #:type 'server))

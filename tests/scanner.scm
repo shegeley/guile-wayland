@@ -21,11 +21,11 @@
    (test-assert (string-append (basename p)
                                ":"
                                "server")
-     (use-wayland-protocol (p #:type client)))
+     (use-wayland-protocol (p #:type 'client)))
    (test-assert (string-append (basename p)
                                ":"
                                "client")
-     (use-wayland-protocol (p #:type server))))
+     (use-wayland-protocol (p #:type 'server))))
  protocols)
 
 (test-end)

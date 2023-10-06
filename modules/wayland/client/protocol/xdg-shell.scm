@@ -8,4 +8,4 @@
 
   (define xdg-shell.xml (string-append %wayland-protocols-dir "/wayland-protocols/stable/xdg-shell/xdg-shell.xml")))
 
-(use-wayland-protocol (xdg-shell.xml #:type client))
+(use-wayland-protocol (xdg-shell.xml #:type 'client))
