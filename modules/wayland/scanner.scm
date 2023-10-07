@@ -544,6 +544,5 @@
       ((_ (xml-path a ...))
        #`(begin #,@(apply protocol->code
                           (sxml->protocol
-                           (file->sxml
-                            (syntax->datum #'xml-path)))
+                           (file->sxml #'xml-path))
                           (syntax->datum #'(a ...))))))))
