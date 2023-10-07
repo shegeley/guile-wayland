@@ -545,8 +545,5 @@
        #`(begin #,@(apply protocol->code
                           (sxml->protocol
                            (file->sxml
-                            (syntax->datum
-                             (cond ((string? #'xml-path) #'xml-path)
-                                   ((symbol? #'xml-path)
-                                    (module-ref (current-module) #'xml-path))))))
+                            (syntax->datum #'xml-path)))
                           (syntax->datum #'(a ...))))))))
