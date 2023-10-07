@@ -542,8 +542,8 @@
 
     (syntax-case x ()
       ((_ (xml-path a ...))
-       #`(begin #,@(apply
-                    protocol->code
-                    (sxml->protocol
-                     (file->sxml (datum->syntax #'xml-path: #'xml-path)))
-                    (syntax->datum #'(a ...))))))))
+       (apply
+        protocol->code
+        (sxml->protocol
+         (file->sxml #'xml-path))
+        (syntax->datum #'(a ...)))))))
