@@ -143,6 +143,11 @@
                                      (and arg-interface-type
                                           (_->- arg-interface-type))
                                      (->bool allow-null)) ...)))
+    ((request (@ (name ,name) (type (,type #f))))
+     (%make-message (_->- name)
+                    (and type (string=? type "destructor"))
+                    #f 'request
+                    (list '())))
     ((enum (@ (name ,name) (bitfield (,bitfield #f)))
            (description ,description)
            (entry (@ (name ,entry-name) (value ,entry-value)) . ,rest) ...)
