@@ -130,6 +130,12 @@
                                      (and arg-interface-type
                                           (_->- arg-interface-type))
                                      (->bool allow-null)) ...)))
+    ((event (@ (name ,name) (since (,since #f)) (type (,type #f))))
+     (%make-message (_->- name)
+                    (and type (string=? type "destructor"))
+                    since
+                    'event
+                    (list '())))
     ((request (@ (name ,name) (since (,since #f)) (type (,type #f)))
               ,description
               (arg (@ (type ,arg-type)
