@@ -135,7 +135,7 @@
                     (and type (string=? type "destructor"))
                     since
                     'event
-                    (list '())))
+                    (list)))
     ((request (@ (name ,name) (since (,since #f)) (type (,type #f)))
               ,description
               (arg (@ (type ,arg-type)
@@ -153,7 +153,7 @@
      (%make-message (_->- name)
                     (and type (string=? type "destructor"))
                     #f 'request
-                    (list '())))
+                    (list)))
     ((enum (@ (name ,name) (bitfield (,bitfield #f)))
            (description ,description)
            (entry (@ (name ,entry-name) (value ,entry-value)) . ,rest) ...)
