@@ -1,6 +1,5 @@
-(define-module (wayland client protocol input-method)
-  #:use-module (wayland client protocol wayland)
-
+(define-module (wayland server protocol input-method)
+  #:use-module (wayland server protocol wayland)
   #:use-module (bytestructure-class)
   #:use-module (wayland scanner)
   #:use-module (wayland config))
@@ -10,4 +9,4 @@
     (string-append %wayland-protocols-dir
                    "/input-method-unstable-v2.xml")))
 
-(use-wayland-protocol (input-method.xml #:type client))
+(use-wayland-protocol (input-method.xml #:type server))
