@@ -10,8 +10,8 @@
  (rnrs bytevectors)
  (wayland interface)
  (wayland proxy)
+ (wayland client protocol input-method)
  (wayland client protocol wayland)
- (wayland client protocol text-input)
  (wayland client protocol xdg-shell))
 
 ;; see the reference from wlroots
@@ -25,7 +25,7 @@
 (define xdg-wm-base (make-parameter #f))
 (define seat (make-parameter #f))
 (define surface (make-parameter #f))
-(define input-method (make-parameter #f))
+(define input-manager (make-parameter #f))
 (define xdg-toplevel (make-parameter #f))
 
 (define (main)
@@ -61,21 +61,23 @@
                              #:ping (lambda (data base  serial)
                                       (pk 'ping)
                                       (xdg-wm-base-pong base serial)))))
-                         ((string=? "zwp_input_method_v1" interface)
+                         ((string=? "zwp_input_method_manager_v2" interface)
                           (format #t "Got call~%")
-                          (input-method (wrap-zwp-input-method-v1
-                                         (wl-registry-bind registry name
-                                                           %zwp-input-method-v1-interface 1))))))
+                          (input-manager
+                           (wrap-zwp-input-manager-v2
+                            (wl-registry-bind registry name
+                                              %zwp-input-manager-v2-interface 1))))))
                       #:global-remove
                       (lambda (data registry name)
                         (pk 'remove data registry name))))]
       (wl-registry-add-listener registry listener))
     (wl-display-roundtrip w-display)
-    (if (and (input-method)
+    (if (and (input-manager)
              (seat))
         (format #t "Got it!~%" )
         (error (format #f "Can't access input-method!")))
-    (format #t "input-method: ~a~%" (input-method))
+    (format #t "input-method: ~a~%"
+            (input-manager))
     ;; (let* [(surface* (wl-compositor-create-surface (compositor)))
     ;;        (_ (surface surface*))
     ;;        (xdg-surface (xdg-wm-base-get-xdg-surface (xdg-wm-base) (surface)))
