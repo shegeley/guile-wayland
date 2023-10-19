@@ -6,7 +6,6 @@
 
 (eval-when (compile)
   (define input-method.xml
-    (string-append %wayland-protocols-dir
-                   "/input-method-unstable-v2.xml")))
+    (xml "input-method-unstable-v2")))
 
 (use-wayland-protocol (input-method.xml #:type server))
