@@ -2,7 +2,9 @@
   #:use-module (wayland server protocol wayland)
   #:use-module (bytestructure-class)
   #:use-module (wayland scanner)
-  #:use-module (wayland config))
+  #:use-module (wayland config)
+  #:use-module ((wayland util)
+                #:select (xml)))
 
 (eval-when (compile)
   (define input-method.xml

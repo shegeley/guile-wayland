@@ -1,6 +1,6 @@
 (define-module (wayland client protocol input-method)
   #:use-module (wayland client protocol wayland)
-  #:use-module ((wayland utils)
+  #:use-module ((wayland util)
                 #:select (xml))
 
   #:use-module (bytestructure-class)
