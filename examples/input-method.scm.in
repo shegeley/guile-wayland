@@ -60,21 +60,6 @@
                 (cond
                  ((string=? "wl_seat" interface)
                   (seat (wrap-wl-seat (wl-registry-bind registry name %wl-seat-interface 3))))
-                 ;; ((string=? "wl_compositor" interface)
-                 ;;  (compositor (wrap-wl-compositor
-                 ;;               (wl-registry-bind
-                 ;;                registry name
-                 ;;                %wl-compositor-interface 3))))
-                 ;; ((string=? "xdg_wm_base" interface)
-                 ;;  (xdg-wm-base
-                 ;;   (wrap-xdg-wm-base
-                 ;;    (wl-registry-bind registry name %xdg-wm-base-interface 1)))
-                 ;;  (xdg-wm-base-add-listener
-                 ;;   (xdg-wm-base)
-                 ;;   (make <xdg-wm-base-listener>
-                 ;;     #:ping (lambda (data base  serial)
-                 ;;              (pk 'ping)
-                 ;;              (xdg-wm-base-pong base serial)))))
                  ((string=? "zwp_input_method_manager_v2" interface)
                   (format #t "Got call~%")
                   (input-method-manager
@@ -94,30 +79,23 @@
                  (input-method-manager)
                  (seat)))
   (format #t "Input-method: ~a ~%" (input-method))
-  ;; (let* [(listener (make <zwp-input-lm>
-  ;;                    #:done
-  ;;                    (lambda (data _ int)
-  ;;                      (format #t "done with: ~a ~%" int))
-  ;;                    #:commit-string
-  ;;                    (lambda (data _ string)
-  ;;                      (format #t "string: ~a ~%" string))
-  ;;                    #:enter
-  ;;                    (lambda (data text-input* wl-surface)
-  ;;                      (wl-surface-commit (surface))
-  ;;                      (zwp-text-input-v3-enable (text-input))
-  ;;                      (format #t "enter! args: ~a ~%" data)
-  ;;                      (zwp-text-input-v3-commit (text-input))
-  ;;                      (wl-surface-commit (surface)))
-  ;;                    #:leave
-  ;;                    (lambda (data text-input* wl-surface)
-  ;;                      (wl-surface-commit (surface))
-  ;;                      (wl-display-roundtrip w-display)
-  ;;                      (zwp-text-input-v3-disable (text-input))
-  ;;                      (format #t "leave! args: ~a ш~%" wl-surface)
-  ;;                      (zwp-text-input-v3-commit (text-input))
-  ;;                      (wl-surface-commit (surface)))))]
-  ;;   (zwp-text-input-v3-add-listener (text-input) listener)
-  ;;   (xdg-toplevel (xdg-surface-get-toplevel xdg-surface))
-  ;;   (wl-surface-commit (surface)))
+  (let* [(listener
+          (make <zwp-input-method-v2-listener>
+            #:done
+            (lambda args
+              (format #t "done! ~%"))
+            #:commit-string
+            (lambda args
+              (format #t "commit! ~%"))
+            #:activate
+            (lambda args
+              (format #t "activate! args: ~a ~%" args))
+            #:deactivate
+            (lambda args
+              (format #t "leave! args: ~a ~%" args))))]
+    ;; activate! args: (#<pointer 0x0> ...)
+    ;; listener function for opcode 3 of zwp_input_method_v2 is NULL
+    ;; see https://wayland-devel.freedesktop.narkive.com/Py8lGbxu/patch-wayland-assert-if-a-listener-function-is-null
+    (zwp-input-method-v2-add-listener (input-method) listener))
   (wl-display-roundtrip (display))
   (while (wl-display-dispatch (display))))
