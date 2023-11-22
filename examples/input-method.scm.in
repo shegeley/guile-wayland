@@ -21,12 +21,17 @@
 
 (gc-disable)
 
-(define compositor (make-parameter #f))
-(define xdg-wm-base (make-parameter #f))
-(define seat (make-parameter #f))
-(define surface (make-parameter #f))
+;; (define compositor (make-parameter #f))
+
+;; (define xdg-wm-base (make-parameter #f))
+
+;; (define seat (make-parameter #f))
+
+;; (define surface (make-parameter #f))
+
 (define input-manager (make-parameter #f))
-(define xdg-toplevel (make-parameter #f))
+
+;; (define xdg-toplevel (make-parameter #f))
 
 (define (main)
   (let* ((w-display (wl-display-connect)))
@@ -44,23 +49,23 @@
                         (format #t "interface: '~a', version: ~a, name: ~a~%"
                                 interface version name)
                         (cond
-                         ((string=? "wl_seat" interface)
-                          (seat (wrap-wl-seat (wl-registry-bind registry name %wl-seat-interface 3))))
-                         ((string=? "wl_compositor" interface)
-                          (compositor (wrap-wl-compositor
-                                       (wl-registry-bind
-                                        registry name
-                                        %wl-compositor-interface 3))))
-                         ((string=? "xdg_wm_base" interface)
-                          (xdg-wm-base
-                           (wrap-xdg-wm-base
-                            (wl-registry-bind registry name %xdg-wm-base-interface 1)))
-                          (xdg-wm-base-add-listener
-                           (xdg-wm-base)
-                           (make <xdg-wm-base-listener>
-                             #:ping (lambda (data base  serial)
-                                      (pk 'ping)
-                                      (xdg-wm-base-pong base serial)))))
+                         ;; ((string=? "wl_seat" interface)
+                         ;;  (seat (wrap-wl-seat (wl-registry-bind registry name %wl-seat-interface 3))))
+                         ;; ((string=? "wl_compositor" interface)
+                         ;;  (compositor (wrap-wl-compositor
+                         ;;               (wl-registry-bind
+                         ;;                registry name
+                         ;;                %wl-compositor-interface 3))))
+                         ;; ((string=? "xdg_wm_base" interface)
+                         ;;  (xdg-wm-base
+                         ;;   (wrap-xdg-wm-base
+                         ;;    (wl-registry-bind registry name %xdg-wm-base-interface 1)))
+                         ;;  (xdg-wm-base-add-listener
+                         ;;   (xdg-wm-base)
+                         ;;   (make <xdg-wm-base-listener>
+                         ;;     #:ping (lambda (data base  serial)
+                         ;;              (pk 'ping)
+                         ;;              (xdg-wm-base-pong base serial)))))
                          ((string=? "zwp_input_method_manager_v2" interface)
                           (format #t "Got call~%")
                           (input-manager
@@ -72,8 +77,7 @@
                         (pk 'remove data registry name))))]
       (wl-registry-add-listener registry listener))
     (wl-display-roundtrip w-display)
-    (if (and (input-manager)
-             (seat))
+    (if (input-manager)
         (format #t "Got it!~%" )
         (error (format #f "Can't access input-method!")))
     (format #t "input-method: ~a~%"
