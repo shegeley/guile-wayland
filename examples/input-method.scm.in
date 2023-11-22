@@ -46,7 +46,7 @@
 
 (define (main)
   (display (wl-display-connect))
-  (unless w-display
+  (unless (display)
     (display "Unable to connect to wayland compositor")
     (newline)
     (exit -1))
@@ -90,7 +90,9 @@
       (format #t "Got it!~%")
       (error (format #f "Can't access input-manager!")))
   (format #t "Input-method manager: ~a ~%" (input-method-manager))
-  (input-method (zwp-input-method-manager-v2-get-input-method (seat)))
+  (input-method (zwp-input-method-manager-v2-get-input-method
+                 (input-method-manager)
+                 (seat)))
   (format #t "Input-method: ~a ~%" (input-method))
   ;; (let* [(listener (make <zwp-input-lm>
   ;;                    #:done
