@@ -81,21 +81,31 @@
   (format #t "Input-method: ~a ~%" (input-method))
   (let* [(listener
           (make <zwp-input-method-v2-listener>
+            ;; NOTE ALL EVENTS MUST HAVE HANDLERS!
+            ;; OR WILL RESULT IN ERROR "listener function for opcode 3 of zwp_input_method_v2 is NULL"
+            #:text-change-cause
+            (lambda args
+              (format #t "cause! args: ~a ~%" args))
+            #:content-type
+            (lambda args
+              (format #t "content-type! args: ~a ~%" args))
+            #:surrounding-text
+            (lambda args
+              (format #t "surrounding! args: ~a ~%" args))
+            #:unavailable
+            (lambda args
+              (format #t "unavailable! args: ~a ~%" args))
             #:done
             (lambda args
-              (format #t "done! ~%"))
+              (format #t "done! args: ~a ~%" args))
             #:commit-string
             (lambda args
-              (format #t "commit! ~%"))
+              (format #t "commit! args: ~a ~%" args))
             #:activate
             (lambda args
               (format #t "activate! args: ~a ~%" args))
             #:deactivate
             (lambda args
               (format #t "leave! args: ~a ~%" args))))]
-    ;; activate! args: (#<pointer 0x0> ...)
-    ;; listener function for opcode 3 of zwp_input_method_v2 is NULL
-    ;; see https://wayland-devel.freedesktop.narkive.com/Py8lGbxu/patch-wayland-assert-if-a-listener-function-is-null
     (zwp-input-method-v2-add-listener (input-method) listener))
-  (wl-display-roundtrip (display))
-  (while (wl-display-dispatch (display))))
+  (while (wl-display-roundtrip (display))))
