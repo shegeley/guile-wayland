@@ -44,6 +44,12 @@
 (define listener
   (make-parameter #f))
 
+(define (input-surface)
+  (make-parameter #f))
+
+(define keyboard-grab
+  (make-parameter #f))
+
 (define (main)
   (display (wl-display-connect))
   (unless (display)
@@ -58,6 +64,12 @@
                 (format #t "interface: '~a', version: ~a, name: ~a~%"
                         interface version name)
                 (cond
+                 ((string=? "wl_compositor" interface)
+                  (compositor (wrap-wl-compositor
+                               (wl-registry-bind
+                                registry name
+                                %wl-compositor-interface 3)))
+                  (surface (wl-compositor-create-surface (compositor))))
                  ((string=? "wl_seat" interface)
                   (seat (wrap-wl-seat (wl-registry-bind registry name %wl-seat-interface 3))))
                  ((string=? "zwp_input_method_manager_v2" interface)
@@ -102,8 +114,12 @@
             (lambda args
               (format #t "commit! args: ~a ~%" args))
             #:activate
-            (lambda args
-              (format #t "activate! args: ~a ~%" args))
+            (lambda (_ im)
+              (format #t "activate! im: ~a ~%" im)
+              ;; (keyboard-grab (zwp-input-method-v2-grab-keyboard im))
+              (zwp-input-method-v2-get-input-popup-surface
+               (input-method)
+               (input-surface)))
             #:deactivate
             (lambda args
               (format #t "leave! args: ~a ~%" args))))]
