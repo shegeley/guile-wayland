@@ -44,7 +44,7 @@
 (define listener
   (make-parameter #f))
 
-(define (input-surface)
+(define input-surface
   (make-parameter #f))
 
 (define keyboard-grab
@@ -69,7 +69,7 @@
                                (wl-registry-bind
                                 registry name
                                 %wl-compositor-interface 3)))
-                  (surface (wl-compositor-create-surface (compositor))))
+                  (input-surface (wl-compositor-create-surface (compositor))))
                  ((string=? "wl_seat" interface)
                   (seat (wrap-wl-seat (wl-registry-bind registry name %wl-seat-interface 3))))
                  ((string=? "zwp_input_method_manager_v2" interface)
