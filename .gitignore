@@ -70,6 +70,7 @@ GPATH
 GRTAGS
 GTAGS
 Makefile
+!/bug-reports/Makefile
 Makefile.in
 config.cache
 stamp-h[0-9]
